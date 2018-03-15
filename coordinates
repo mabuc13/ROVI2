@@ -1,0 +1,5 @@
+We're using 4 points a long distance from each other, as this gives better performance in the perspective transform.
+north_point: 55.382479, 10.371083
+west_point: 55.381857, 10.370305
+south_point: 55.381291, 10.371335
+east_point: 55.381764, 10.372385
