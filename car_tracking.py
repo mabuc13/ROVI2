@@ -38,24 +38,34 @@ def track_car_video(video, centroids):
         sys.exit()
 
     # Define an initial bounding box
-    one_bbox = centroids[1]
-    bbox = (one_bbox[0]-15 ,one_bbox[1]-15, 30, 30 )
+#    one_bbox = centroids[1]
+#    bbox = (one_bbox[0]-15 ,one_bbox[1]-15, 30, 30 )
     #bbox = (287, 23, 86, 320)
 
     # Uncomment the line below to select a different bounding box
     #bbox = cv2.selectROI(frame, False)
 
     # Initialize tracker with first frame and bounding box
-    ok = tracker.init(frame, bbox)
 
+    frameCounter = 0
     while True:
         # Read a new frame
         ok, frame = video.read()
+
         if not ok:
             break
-
+        frameCounter = frameCounter + 1
         # Start timer
         timer = cv2.getTickCount()
+        if frameCounter % 200 == 0:
+            print("200 frames passed")
+            #centroids = transform_and_blob(frame)
+            cv2.imshow("Testing scope", frame)
+            cv2.waitKey(0)
+
+        one_bbox = centroids[1]
+        bbox = (one_bbox[0]-15 ,one_bbox[1]-15, 30, 30 )
+        ok = tracker.init(frame, bbox)
 
         # Update tracker
         ok, bbox = tracker.update(frame)
@@ -172,36 +182,106 @@ def blob_detection(window_name, detect_image, display_image, connectivity=4):
 
 
 def background_subtract(video):
+    frameCounter = 0
+    trackerArray = []
     fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows = False, history = 40, varThreshold = 35)
     while(1):
+        #Loading video, one frame at a time
         ret, frame = video.read()
-
         frame = transform_perspective(frame)
-
-        blur_size = 11
-        cv2.blur(frame, (blur_size, blur_size), frame)
-
         fgmask = fgbg.apply(frame)
 
-        elip_val = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
+        #Finding new blobs each 200 frames
+        if frameCounter % 200 == 0 or frameCounter == 0:
+            print("200 frames passed, updating blobs")
+            blur_size = 11
+            cv2.blur(frame, (blur_size, blur_size), frame)
 
-        fgmask = cv2.erode(fgmask, elip_val)
-        fgmask = cv2.dilate(fgmask, elip_val, iterations = 3)
 
-        centroids = blob_detection('test', fgmask, fgmask)
 
-        track_car_video(video, centroids)
+            elip_val = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
 
-        cv2.imshow('frame1', fgmask)
+            fgmask = cv2.erode(fgmask, elip_val)
+            fgmask = cv2.dilate(fgmask, elip_val, iterations = 3)
 
-        #cv2.imshow('frame2', frame)
+            centroids = blob_detection('test', fgmask, fgmask)
+            print("Entered experimental for loop")
+            cv2.imshow("Testing binary picture", fgmask)
+            cv2.waitKey(0)
+            #print("Centroids: \n", centroids)
+            for i in centroids:
+                one_bbox = i
+                print ("one_bbox")
+                bbox = (one_bbox[0]-30 ,one_bbox[1]-30, 60, 60 )
+                tracker = cv2.TrackerKCF_create()
+                ok = tracker.init(frame, bbox)
+                trackerArray.append(tracker)
+                #ok, bbox = tracker.update(frame)
+                #if ok:
+                # Tracking success
+
+                  #  p1 = (int(bbox[0]), int(bbox[1]))
+                #    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+               #   #  cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
+               # else :
+            # Tracking failure
+                   # cv2.putText(frame, "Tracking failure detected", (100,80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,(0,0,255),2)
+           # print("Current blob \n", centroids[1])
+
+        #bbox = (287, 23, 86, 320)
+
+
+        frameCounter = frameCounter +1
+        #INIT tracker
+
+
+
+        # Update tracker
+        for i in trackerArray:
+            ok, bbox = i.update(frame)
+            if ok:
+                # Tracking success
+                p1 = (int(bbox[0]), int(bbox[1]))
+                p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+                cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
+        # Calculate Frames per second (FPS)
+        timer = cv2.getTickCount()
+        fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer);
+
+        # Draw bounding box
+
+
+        # Display tracker type on frame
+        cv2.putText(frame, "tracker_type" + " Tracker", (100,20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50),2);
+
+        # Display FPS on frame
+        cv2.putText(frame, "FPS : " + str(int(fps)), (100,50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2);
+
+        # Display result
+        cv2.imshow("Tracking", frame)
+
+        # Exit if ESC pressed
         k = cv2.waitKey(1) & 0xff
-        if k == 27:
-            break
+        if k == 27 : break
+
     video.release()
     cv2.destroyAllWindows()
 
+def transform_and_blob(frame):
+    frame = transform_perspective(frame)
 
+    blur_size = 11
+    cv2.blur(frame, (blur_size, blur_size), frame)
+
+    fgmask = fgbg.apply(frame)
+
+    elip_val = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
+
+    fgmask = cv2.erode(fgmask, elip_val)
+    fgmask = cv2.dilate(fgmask, elip_val, iterations = 3)
+
+    centroids = blob_detection('test', fgmask, fgmask)
+    return centroids
 
 def transform_perspective(frame):
      #find pixel pos in frame
@@ -250,7 +330,7 @@ def transform_perspective(frame):
 
 if __name__ == '__main__' :
     video = cv2.VideoCapture \
-        ('2016 06 23 1418 Krydset Søndre Boulevard Kløvermosevej Tietgens Alle.mp4')
+        ('files/2016 06 23 1418 Krydset Søndre Boulevard Kløvermosevej Tietgens Alle.mp4')
 
     if not video.isOpened():
         print("Could not open video")
