@@ -2,8 +2,8 @@ import cv2
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-
-
+import itertools
+from math import sqrt
 
 #(major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')￼
 def track_car_video(video, centroids):
@@ -155,7 +155,7 @@ def track_car_frame(frame):
     return frame
 
 
-def blob_detection(window_name, detect_image, display_image, connectivity=4):
+def blob_detection(window_name, detect_image, display_image, connectivity=8):
 
     ret, thresh = cv2.threshold(detect_image, 0, 255, cv2.THRESH_BINARY)
 
@@ -184,38 +184,45 @@ def blob_detection(window_name, detect_image, display_image, connectivity=4):
 def background_subtract(video):
     frameCounter = 0
     trackerArray = []
+    duplicate = False
     fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows = False, history = 40, varThreshold = 35)
     while(1):
         #Loading video, one frame at a time
         ret, frame = video.read()
+        #transform the picture
         frame = transform_perspective(frame)
         fgmask = fgbg.apply(frame)
+        blur_size = 3
+        cv2.blur(frame, (blur_size, blur_size), frame)
+        elip_val = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
+
+        fgmask = cv2.erode(fgmask, elip_val)
+        fgmask = cv2.dilate(fgmask, elip_val, iterations=3)
 
         #Finding new blobs each 200 frames
-        if frameCounter % 200 == 0 or frameCounter == 0:
+        if frameCounter % 30 == 0 or frameCounter == 2:
             print("200 frames passed, updating blobs")
-            blur_size = 11
-            cv2.blur(frame, (blur_size, blur_size), frame)
-
-
-
-            elip_val = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
-
-            fgmask = cv2.erode(fgmask, elip_val)
-            fgmask = cv2.dilate(fgmask, elip_val, iterations = 3)
 
             centroids = blob_detection('test', fgmask, fgmask)
             print("Entered experimental for loop")
-            cv2.imshow("Testing binary picture", fgmask)
-            cv2.waitKey(0)
+            #cv2.imshow("Testing binary picture", fgmask)
+            #cv2.waitKey(0)
             #print("Centroids: \n", centroids)
             for i in centroids:
                 one_bbox = i
-                print ("one_bbox")
-                bbox = (one_bbox[0]-30 ,one_bbox[1]-30, 60, 60 )
-                tracker = cv2.TrackerKCF_create()
-                ok = tracker.init(frame, bbox)
-                trackerArray.append(tracker)
+                #print ("one_bbox")
+                bbox = (one_bbox[0]-20 ,one_bbox[1]-20, 40, 40 )
+                duplicate = False
+                for j in range(len(trackerArray)):
+                    ok, t = trackerArray[j].update(frame)
+                    if sqrt((bbox[0] - t[0])**2 + (bbox[1] - t[1])**2)<10 and ok:
+                        duplicate = True
+                        #print("t ", t[0] , t[1], "bbox", bbox[0], bbox[1])
+                        #print("Found duplicate: ", t, " - ", bbox)
+                if duplicate == False:
+                    tracker = cv2.TrackerKCF_create()
+                    ok = tracker.init(frame, bbox)
+                    trackerArray.append(tracker)
                 #ok, bbox = tracker.update(frame)
                 #if ok:
                 # Tracking success
@@ -237,6 +244,8 @@ def background_subtract(video):
 
 
         # Update tracker
+        print(len(trackerArray))
+        cnt = 0
         for i in trackerArray:
             ok, bbox = i.update(frame)
             if ok:
@@ -244,6 +253,9 @@ def background_subtract(video):
                 p1 = (int(bbox[0]), int(bbox[1]))
                 p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
                 cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
+            else:
+                del trackerArray[cnt]
+            cnt = cnt + 1
         # Calculate Frames per second (FPS)
         timer = cv2.getTickCount()
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer);
@@ -259,7 +271,7 @@ def background_subtract(video):
 
         # Display result
         cv2.imshow("Tracking", frame)
-
+        cv2.imshow("blobs", fgmask)
         # Exit if ESC pressed
         k = cv2.waitKey(1) & 0xff
         if k == 27 : break
