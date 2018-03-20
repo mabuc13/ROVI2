@@ -5,96 +5,6 @@ import matplotlib.pyplot as plt
 import itertools
 from math import sqrt
 
-#(major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')￼
-def track_car_video(video, centroids):
-    tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-    tracker_type = tracker_types[2]
-
-    if tracker_type == 'BOOSTING':
-        tracker = cv2.TrackerBoosting_create()
-    if tracker_type == 'MIL':
-        tracker = cv2.TrackerMIL_create()
-    if tracker_type == 'KCF':
-        tracker = cv2.TrackerKCF_create()
-    if tracker_type == 'TLD':
-        tracker = cv2.TrackerTLD_create()
-    if tracker_type == 'MEDIANFLOW':
-        tracker = cv2.TrackerMedianFlow_create()
-    if tracker_type == 'GOTURN':
-        tracker = cv2.TrackerGOTURN_create()
-
-    # Read video
-#    video = cv2.VideoCapture("2016 06 23 1418 Krydset Søndre Boulevard Kløvermosevej Tietgens Alle.mp4")
-
-    # Exit if video not opened.
-    if not video.isOpened():
-        print("Could not open video")
-        sys.exit()
-
-    # Read first frame.
-    ok, frame = video.read()
-    if not ok:
-        print('Cannot read video file')
-        sys.exit()
-
-    # Define an initial bounding box
-#    one_bbox = centroids[1]
-#    bbox = (one_bbox[0]-15 ,one_bbox[1]-15, 30, 30 )
-    #bbox = (287, 23, 86, 320)
-
-    # Uncomment the line below to select a different bounding box
-    #bbox = cv2.selectROI(frame, False)
-
-    # Initialize tracker with first frame and bounding box
-
-    frameCounter = 0
-    while True:
-        # Read a new frame
-        ok, frame = video.read()
-
-        if not ok:
-            break
-        frameCounter = frameCounter + 1
-        # Start timer
-        timer = cv2.getTickCount()
-        if frameCounter % 200 == 0:
-            print("200 frames passed")
-            #centroids = transform_and_blob(frame)
-            cv2.imshow("Testing scope", frame)
-            cv2.waitKey(0)
-
-        one_bbox = centroids[1]
-        bbox = (one_bbox[0]-15 ,one_bbox[1]-15, 30, 30 )
-        ok = tracker.init(frame, bbox)
-
-        # Update tracker
-        ok, bbox = tracker.update(frame)
-
-        # Calculate Frames per second (FPS)
-        fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer);
-
-        # Draw bounding box
-        if ok:
-            # Tracking success
-            p1 = (int(bbox[0]), int(bbox[1]))
-            p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-            cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
-        else :
-            # Tracking failure
-            cv2.putText(frame, "Tracking failure detected", (100,80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,(0,0,255),2)
-
-        # Display tracker type on frame
-        cv2.putText(frame, tracker_type + " Tracker", (100,20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50),2);
-
-        # Display FPS on frame
-        cv2.putText(frame, "FPS : " + str(int(fps)), (100,50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2);
-
-        # Display result
-        cv2.imshow("Tracking", frame)
-
-        # Exit if ESC pressed
-        k = cv2.waitKey(1) & 0xff
-        if k == 27 : break
 
 class Kallman:
 
@@ -139,62 +49,6 @@ class Kallman:
     def getY(self):
         return self.yCoordinate
 
-def track_car_frame(frame):
-    tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-    tracker_type = tracker_types[4]
-
-    if tracker_type == 'BOOSTING':
-        tracker = cv2.TrackerBoosting_create()
-    if tracker_type == 'MIL':
-        tracker = cv2.TrackerMIL_create()
-    if tracker_type == 'KCF':
-        tracker = cv2.TrackerKCF_create()
-    if tracker_type == 'TLD':
-        tracker = cv2.TrackerTLD_create()
-    if tracker_type == 'MEDIANFLOW':
-        tracker = cv2.TrackerMedianFlow_create()
-    if tracker_type == 'GOTURN':
-        tracker = cv2.TrackerGOTURN_create()
-
-    # Define an initial bounding box
-    bbox = (287, 23, 86, 320)
-
-    # Uncomment the line below to select a different bounding box
-    bbox = cv2.selectROI(frame, False)
-
-    # Initialize tracker with first frame and bounding box
-    ok = tracker.init(frame, bbox)
-
-    # Start timer
-    timer = cv2.getTickCount()
-
-    # Update tracker
-    ok, bbox = tracker.update(frame)
-
-    # Calculate Frames per second (FPS)
-    fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer);
-
-    # Draw bounding box
-    if ok:
-        # Tracking success
-        p1 = (int(bbox[0]), int(bbox[1]))
-        p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-        cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
-    else :
-        # Tracking failure
-        cv2.putText(frame, "Tracking failure detected", (100,80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,(0,0,255),2)
-
-    # Display tracker type on frame
-    cv2.putText(frame, tracker_type + " Tracker", (100,20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50),2);
-
-    # Display FPS on frame
-    cv2.putText(frame, "FPS : " + str(int(fps)), (100,50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2);
-
-    # Display result
-    cv2.imshow("Tracking", frame)
-    cv2.waitKey(1)
-    return frame
-
 
 def blob_detection(window_name, detect_image, display_image, connectivity=8):
 
@@ -226,14 +80,14 @@ def background_subtract(video):
     frameCounter = 0
     trackerArray = []
     kallmanArray = []
-    oldPositions = []
     duplicate = False
-    fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows = False, history = 40, varThreshold = 35)
+    fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows = False, history = 40, varThreshold = 35) #Starting back ground subtractor object
     while(1):
         #Loading video, one frame at a time
         ret, frame = video.read()
         #transform the picture
         frame = transform_perspective(frame)
+        #Blurring and applying erosion and dilation to the element used for blob detection
         fgmask = fgbg.apply(frame)
         blur_size = 3
         cv2.blur(frame, (blur_size, blur_size), frame)
@@ -242,14 +96,12 @@ def background_subtract(video):
         fgmask = cv2.erode(fgmask, elip_val)
         fgmask = cv2.dilate(fgmask, elip_val, iterations=5)
 
-        #Finding new blobs each 200 frames
+        #Finding new blobs each 30 frames
         if frameCounter % 30 == 0 or frameCounter == 2:
-            print("200 frames passed, updating blobs")
+            print("30 frames passed, updating blobs")
 
             centroids = blob_detection('test', fgmask, fgmask)
-            #cv2.imshow("Testing binary picture", fgmask)
-            #cv2.waitKey(0)
-            #print("Centroids: \n", centroids)
+           #Going through all the centroids and comparing them with the tracked blobs, not adding new ones whichs is too close to an existing tracked object
             for i in centroids:
                 one_bbox = i
                 #print ("one_bbox")
@@ -260,42 +112,21 @@ def background_subtract(video):
                     ok, t = trackerArray[j].update(frame)
                     if sqrt((bbox[0] - t[0])**2 + (bbox[1] - t[1])**2)<10 and ok:
                         duplicate = True
-                        #print("t ", t[0] , t[1], "bbox", bbox[0], bbox[1])
-                        #print("Found duplicate: ", t, " - ", bbox)
                 if duplicate == False:
+                    #Creating a new tracker and a new kalman filter for the blob
                     tracker = cv2.TrackerKCF_create()
                     ok = tracker.init(frame, bbox)
                     kFilter = Kallman(bbox[0], bbox[1])
                     trackerArray.append(tracker)
                     kallmanArray.append(kFilter)
-                #ok, bbox = tracker.update(frame)
-                #if ok:
-                # Tracking success
-
-                  #  p1 = (int(bbox[0]), int(bbox[1]))
-                #    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-               #   #  cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
-               # else :
-            # Tracking failure
-                   # cv2.putText(frame, "Tracking failure detected", (100,80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,(0,0,255),2)
-           # print("Current blob \n", centroids[1])
-
-        #bbox = (287, 23, 86, 320)
 
 
-
-        #INIT tracker
-
-
-
-        # Update tracker
+        # Update tracker & Kalman filter
         cnt = 0
-        delCount = 0
         for i in trackerArray:
             ok, bbox = i.update(frame)
             kMan = kallmanArray[cnt]
             #Calculating velocity from old positional values and time since last measurements
-
             deltaX =  bbox[0] - kMan.getX()
             deltaY =  bbox[1] - kMan.getY()
             xVel = deltaX / 0.04 # 1/25 which is the time in seconds from last frame
@@ -309,25 +140,18 @@ def background_subtract(video):
                 cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
                 cv2.rectangle(frame, (estimate[0], estimate[1]), (estimate[0]+10, estimate[1]+10), (0,255,0), 2, 1)
                 distance = sqrt(estimate[2]**2+estimate[3]**2)
+                #Going from pixels to km/h
                 distance = (distance/10.1159156)*3.6
                 cv2.putText(frame, str(float(("%.2f" % distance))), (int(bbox[0]), int(bbox[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
             else:
                 del trackerArray[cnt]
                 del kallmanArray[cnt]
-                delCount = delCount +1
             cnt = cnt + 1
-        # Calculate Frames per second (FPS)
-        timer = cv2.getTickCount()
-        fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer);
 
-        # Draw bounding box
         frameCounter = frameCounter +1
 
         # Display tracker type on frame
         cv2.putText(frame, "tracker_type" + " Tracker", (100,20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50),2);
-
-        # Display FPS on frame
-        cv2.putText(frame, "FPS : " + str(int(fps)), (100,50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2);
 
         # Display result
         cv2.imshow("Tracking", frame)
@@ -339,27 +163,8 @@ def background_subtract(video):
     video.release()
     cv2.destroyAllWindows()
 
-def transform_and_blob(frame):
-    frame = transform_perspective(frame)
-
-    blur_size = 11
-    cv2.blur(frame, (blur_size, blur_size), frame)
-
-    fgmask = fgbg.apply(frame)
-
-    elip_val = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
-
-    fgmask = cv2.erode(fgmask, elip_val)
-    fgmask = cv2.dilate(fgmask, elip_val, iterations = 3)
-
-    centroids = blob_detection('test', fgmask, fgmask)
-    return centroids
 
 def transform_perspective(frame):
-     #find pixel pos in frame
-    #plt.figure(figsize=(8, 6))
-    #plt.imshow(frame)
-    #plt.show()
 
     points = np.array([[251, 39],[1110, 62],[1141, 685], [178, 659]])
 
@@ -376,28 +181,10 @@ def transform_perspective(frame):
     h, status =cv2.findHomography(points, new_corner_positions)
 
     size = (int(max(north_to_west,south_to_east)), int(max(north_to_east, south_to_west)))
-    #print(h)
+
     im_out = cv2.warpPerspective(frame, h, size)
-    #cv2.namedWindow('frame1', cv2.WINDOW_NORMAL)
-    #cv2.imshow('frame1', frame)
 
-    #cv2.namedWindow('frame2', cv2.WINDOW_NORMAL)
-    #cv2.imshow('frame2', im_out)
-    #cv2.waitKey(0)
-
-    #plt.imshow(im_out)
-    #plt.show()
-
-        #1292, 380
-        #2708, 1012
-        #2732, 2188
-        #1312, 3024
-    #1328, 2884
-    #1232, 308
-    #2708, 988
-    #2724, 2180
     return im_out
-
 
 
 if __name__ == '__main__' :
@@ -414,13 +201,6 @@ if __name__ == '__main__' :
         print('Cannot read video file')
         sys.exit()
 
-    #do homography transform
-    #frame = transform_perspective(frame)
-
-    #here the background is subtractet
     background_subtract(video)
-
-    #cv2.imshow("test", frame)
-    #cv2.waitKey(0)
 
     print('Program EXIT!')
