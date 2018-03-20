@@ -96,7 +96,48 @@ def track_car_video(video, centroids):
         k = cv2.waitKey(1) & 0xff
         if k == 27 : break
 
+class Kallman:
 
+    def __init__(self, xCord, yCord):
+        self.dt = 1/25 #This is the time ellapsed from frame to frame
+        self.F = np.matrix([[1, 0, self.dt, 0 ], [0, 1, 0, self.dt],[0, 0, 1, 0],[0, 0, 0, 1]])
+        #self.G = numpy.matrix([(self.dt**2)/2, 0],[0 (self.dt**2)/2])
+        self.H = np.matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+
+        self.modelNoise = 0.1
+        self.measNoise = 0.2
+        self.R = self.measNoise**2*4
+        self.Q = self.modelNoise**2*4
+
+        self.pPlus = self.H
+
+        self.QD = self.Q*self.dt
+        self.RD = self.R / self.dt
+
+        self.x = [[xCord], [yCord], [0], [0]] #Last to values are x velocities and y velocities
+        self.xHatPlus = self.x
+        self.xCoordinate = xCord
+        self.yCoordinate = yCord
+        self.xArray = []
+        self.xHatArray = []
+
+    def update(self, xCord, yCord, xVel, yVel):
+        self.y = np.matrix([[xCord], [yCord], [xVel], [yVel]])
+        self.xCoordinate = xCord
+        self.yCoordinate = yCord
+    def estimate(self):
+        self.pMin = self.F*self.pPlus*np.transpose(self.F)+self.QD
+        self.KD = self.pPlus*np.transpose(self.H)*self.RD**-1
+        self.xHatMin = self.F*self.xHatPlus
+        self.xHatPlus = self.xHatMin + self.KD*(self.y-self.H*self.xHatMin)
+        self.pPlus = (self.H-self.KD*self.H)*self.pMin
+        return self.xHatPlus
+
+    def getX(self):
+        return self.xCoordinate
+
+    def getY(self):
+        return self.yCoordinate
 
 def track_car_frame(frame):
     tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
@@ -184,6 +225,8 @@ def blob_detection(window_name, detect_image, display_image, connectivity=8):
 def background_subtract(video):
     frameCounter = 0
     trackerArray = []
+    kallmanArray = []
+    oldPositions = []
     duplicate = False
     fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows = False, history = 40, varThreshold = 35)
     while(1):
@@ -197,14 +240,13 @@ def background_subtract(video):
         elip_val = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
 
         fgmask = cv2.erode(fgmask, elip_val)
-        fgmask = cv2.dilate(fgmask, elip_val, iterations=3)
+        fgmask = cv2.dilate(fgmask, elip_val, iterations=5)
 
         #Finding new blobs each 200 frames
         if frameCounter % 30 == 0 or frameCounter == 2:
             print("200 frames passed, updating blobs")
 
             centroids = blob_detection('test', fgmask, fgmask)
-            print("Entered experimental for loop")
             #cv2.imshow("Testing binary picture", fgmask)
             #cv2.waitKey(0)
             #print("Centroids: \n", centroids)
@@ -214,6 +256,7 @@ def background_subtract(video):
                 bbox = (one_bbox[0]-20 ,one_bbox[1]-20, 40, 40 )
                 duplicate = False
                 for j in range(len(trackerArray)):
+                   #
                     ok, t = trackerArray[j].update(frame)
                     if sqrt((bbox[0] - t[0])**2 + (bbox[1] - t[1])**2)<10 and ok:
                         duplicate = True
@@ -222,7 +265,9 @@ def background_subtract(video):
                 if duplicate == False:
                     tracker = cv2.TrackerKCF_create()
                     ok = tracker.init(frame, bbox)
+                    kFilter = Kallman(bbox[0], bbox[1])
                     trackerArray.append(tracker)
+                    kallmanArray.append(kFilter)
                 #ok, bbox = tracker.update(frame)
                 #if ok:
                 # Tracking success
@@ -238,30 +283,45 @@ def background_subtract(video):
         #bbox = (287, 23, 86, 320)
 
 
-        frameCounter = frameCounter +1
+
         #INIT tracker
 
 
 
         # Update tracker
-        print(len(trackerArray))
         cnt = 0
+        delCount = 0
         for i in trackerArray:
             ok, bbox = i.update(frame)
+            kMan = kallmanArray[cnt]
+            #Calculating velocity from old positional values and time since last measurements
+
+            deltaX =  bbox[0] - kMan.getX()
+            deltaY =  bbox[1] - kMan.getY()
+            xVel = deltaX / 0.04 # 1/25 which is the time in seconds from last frame
+            yVel = deltaY / 0.04
+            kMan.update(bbox[0], bbox[1], xVel, yVel)
+            estimate = kMan.estimate()
             if ok:
                 # Tracking success
                 p1 = (int(bbox[0]), int(bbox[1]))
                 p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
                 cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
+                cv2.rectangle(frame, (estimate[0], estimate[1]), (estimate[0]+10, estimate[1]+10), (0,255,0), 2, 1)
+                distance = sqrt(estimate[2]**2+estimate[3]**2)
+                distance = (distance/10.1159156)*3.6
+                cv2.putText(frame, str(float(("%.2f" % distance))), (int(bbox[0]), int(bbox[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
             else:
                 del trackerArray[cnt]
+                del kallmanArray[cnt]
+                delCount = delCount +1
             cnt = cnt + 1
         # Calculate Frames per second (FPS)
         timer = cv2.getTickCount()
         fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer);
 
         # Draw bounding box
-
+        frameCounter = frameCounter +1
 
         # Display tracker type on frame
         cv2.putText(frame, "tracker_type" + " Tracker", (100,20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50),2);
@@ -304,7 +364,7 @@ def transform_perspective(frame):
     points = np.array([[251, 39],[1110, 62],[1141, 685], [178, 659]])
 
     lenght_in_n2w = (np.sqrt(1110**2 + 62**2) - np.sqrt(251**2 + 39**2))/84.789
-
+    #print(lenght_in_n2w)
     #print(lenght_in_n2w) To get the constant to transform from meter to pixel
 
     north_to_west = 84.789*lenght_in_n2w # meter, x top direction
