@@ -104,13 +104,11 @@ def background_subtract(video):
            #Going through all the centroids and comparing them with the tracked blobs, not adding new ones whichs is too close to an existing tracked object
             for i in centroids:
                 one_bbox = i
-                #print ("one_bbox")
                 bbox = (one_bbox[0]-20 ,one_bbox[1]-20, 40, 40 )
                 duplicate = False
                 for j in range(len(trackerArray)):
-                   #
                     ok, t = trackerArray[j].update(frame)
-                    if sqrt((bbox[0] - t[0])**2 + (bbox[1] - t[1])**2)<10 and ok:
+                    if sqrt((bbox[0] - t[0])**2 + (bbox[1] - t[1])**2)<50 and ok:
                         duplicate = True
                 if duplicate == False:
                     #Creating a new tracker and a new kalman filter for the blob
@@ -142,7 +140,7 @@ def background_subtract(video):
                 distance = sqrt(estimate[2]**2+estimate[3]**2)
                 #Going from pixels to km/h
                 distance = (distance/10.1159156)*3.6
-                cv2.putText(frame, str(float(("%.2f" % distance))), (int(bbox[0]), int(bbox[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
+                cv2.putText(frame, str(float(("%.2f" % distance))) + "km/h", (int(bbox[0]), int(bbox[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50,170,50), 2)
             else:
                 del trackerArray[cnt]
                 del kallmanArray[cnt]
