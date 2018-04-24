@@ -1,0 +1,60 @@
+<!-- MarkerLocator example launch file -->
+
+<launch>
+	<!-- perspective correction calibration points -->
+	<!-- image coordinates in pixels -->
+	<!-- world coordinates in meter -->
+	<!-- OBS calibrated at a height of 0.465m corresponding to the approximate height of the FrobitPro maker -->
+	<param name="calibrate_a_world_x" value="0.0" />
+	<param name="calibrate_a_world_y" value="0.0" />
+	<param name="calibrate_a_image_x" value="934.0" />
+	<param name="calibrate_a_image_y" value="811.0" />
+
+	<param name="calibrate_b_world_x" value="1.80" />
+	<param name="calibrate_b_world_y" value="0.0" />
+	<param name="calibrate_b_image_x" value="1320.0" />
+	<param name="calibrate_b_image_y" value="823.0" />
+
+	<param name="calibrate_c_world_x" value="1.8" />
+	<param name="calibrate_c_world_y" value="1.6" />
+	<param name="calibrate_c_image_x" value="1312.0" />
+	<param name="calibrate_c_image_y" value="493.0" />
+
+	<param name="calibrate_d_world_x" value="0.0" />
+	<param name="calibrate_d_world_y" value="1.6" />
+	<param name="calibrate_d_image_x" value="946.0" />
+	<param name="calibrate_d_image_y" value="479.0" />
+
+	<!-- factor to downscale all images by -->
+	<param name="image_downscale_factor" value="1.0" />
+
+	<!--group ns="MarkerLocator"-->
+		<!-- captures images from the camera -->
+	
+
+
+		<!-- locate a marker of order 7 -->
+		<node pkg="markerlocator" name="markerlocator_7" type="MarkerLocatorROS.py" output="screen">
+			<param name="markerimage_sub" value="/iris/camera/image_raw" />
+			<param name="markerpose_pub" value="/markerlocator/markerpose_7" />
+			<param name="marker_order" value="7" />
+			<param name="marker_size" value="26" /> <!-- pixels (before downscaling) -->
+			<param name="show_image" value="True" />
+			<param name="print_debug_messages" value="False" />
+		</node>
+
+		<node pkg="markerlocator" name="udp_server_6" type="UDPServer.py" output="screen">
+			<param name="markerpose_sub" value="/markerlocator/markerpose_6" />
+			<param name="udp_address" value="fmcomp00.projectnet.wlan.sdu.dk" />
+			<param name="udp_port" value="50006" />
+		</node>
+
+		<node pkg="markerlocator" name="udp_server_7" type="UDPServer.py" output="screen">
+			<param name="markerpose_sub" value="/markerlocator/markerpose_7" />
+			<param name="udp_address" value="fmcomp00.projectnet.wlan.sdu.dk" />
+			<param name="udp_port" value="50007" />
+		</node>
+
+	<!--/group-->
+</launch>
+

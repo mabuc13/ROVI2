@@ -1,0 +1,42 @@
+Fra: Johan Sund Laursen
+Sendt: 21. december 2016 01:34
+Til: Henrik Skov Midtiby
+Emne: SV: Tracking af mobile robotter
+
+Hej Henrik,
+
+Nu har jeg efterhånden brugt din markerlocater et stykke tid med stor succes - så her er lidt feedback. Lidt om omstændighederne - så har jeg brugt den til at tracke en lille robot (epuck) som har en diameter på omtrent 8 cm. Jeg har tracket en enkelt robot og en anden marker på en overflade der var omtrent ½ * ½ meter.
+Det er mest mindre ting jeg har noteret mig:
+
+### Ros kontentioner:
+- Pakkenavnet følger ikke ros-konventionen - den bør hede marker_locator (tror jeg)
+- Mappe navnet skal vist have det samme navn
+- Mappe navnet er MarkerLocator - det antyder at pakke-navnet også skulle være med camelcase men pakke-navnet er markerlocator med småt. (Jeg brugte faktisk rimeligt lang tid på at debugge det her punkt, så så gerne det blev ensrettet)
+- I følge ROS konventionen skal script filer ligge i undermappen package_name/scripts
+- Tror at MyMessage.msg skal være med stort så klassen inden i python og c++ kommer til at hede Markerpose istedet for markerpose
+
+### Funktionellitet:
+- Opencv funktionen Imwrite (som bruges til at gemme billederne) virker ikke med min vertion af opencv - fandt aldrig rigtigt ud af hvorfor.
+- Der kommer en matrix multiplikations fejl når markeren er tæt på kantent
+- Synes det ville være mere overskuligt hvis kalibrerings koordinater blev skrevet ind i launch filen som en liste i stedet for enkelte punkter.
+- Mit kamera var rimeligt tæt på overflade jeg trackede, blev ofte flyttede - og med den kontruktion der holdt den var svært at undgå skygger ned på overfladen (specilet om natten). Det havde programmet svært ved at håndtere. Kunne man gøre noget så kernene der ledes i først bliver lys-normaliseret?
+
+### Perspective converteren:
+Kort sagt så ville jeg gerne have mere og nemmere adgang til kalibreringen i andre ros-pakker. Jeg har brugt en del at skulle tegne videre på kamera billedet for at kunne visuallisere forskellige ting. Lige nu har jeg gjort det ved copy-paste af PerspectiveConverter klassen og kalibrings infoen ind i de andre pakker - men det er ikke nogen elegant løsning.
+
+Så basalt set savner jeg et interface der tillader mig at
+- konvertere pose -> pixel ---- Nyttigt til at tegne videre på billedet
+- konverte pixel til pose ---- Til eksempelvis at vide hvor billedes kant går i den virkelige verden
+
+Andet
+- Enlig synes perspective konverteren burde returnere en tuble istedet for en liste
+  (men jeg er ikke helt sikker på hvad der fungere bedst med opencv)
+- Savnede et auto kalibrings - det ville være super nyttigt når jeg hele tiden flyttede kameraret og gøre det mere fleksiblet i forhold til hvordan jeg kunne sætte mit kamera op.
+Auto calibrerings tool?
+
+### Afslutningsvis
+Så synes jeg bare det har været dejligt at bruge og det gik stærk med at få op at køre - så tusinde tak for hjælpen og god jul 
+
+/Johan
+
+
