@@ -394,7 +394,10 @@ def main():
                 glob_alt = glob_alt -0.5
                 quality_meas = 5
             if glob_alt < 10:
+                if marker_pos.data[2] == -1:
+                    controller_state = 4 #should loiter above object
                 controller_state = 2
+
         if controller_state == 2:
             setpoint_msg, error_vector, yaw_err = hover_n_yaw(glob_alt)
             if (abs(error_vector[0])< 0.3 and abs(error_vector[1]) < 0.3 and abs(yaw_err)<0.2):
@@ -409,7 +412,10 @@ def main():
         if controller_state == 3:
             setpoint_msg.pose.position.z = 0
         #center = 400*pixel_scale
-        print "controller_state, altitude", controller_state, glob_alt
+        if controller_state == 4:
+            setpoint_msg, error_vector = hover(glob_alt)
+            glob_alt = 9
+        print "controller_state: %f. Aaltitude: %f" % (controller_state, glob_alt)
         #if iterator > 100:
         #    if marker_pos.data[3] > 0.02:
         #        yaw = marker_angle_to_radians(marker_pos.data[2])
